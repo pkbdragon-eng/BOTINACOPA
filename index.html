@@ -1,8 +1,9 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chuta e Ganha | Brinde Premiado</title>
+  <title>Gol da Copa | Brinde Premiado</title>
 
   <style>
     * {
@@ -330,17 +331,6 @@
       margin-bottom: 14px;
     }
 
-    .gift-name {
-      background: #ecfdf5;
-      border: 1px dashed #10b981;
-      color: #065f46;
-      border-radius: 16px;
-      padding: 14px;
-      font-weight: 900;
-      font-size: 18px;
-      margin-bottom: 12px;
-    }
-
     .rules {
       font-size: 11px;
       color: #6b7280;
@@ -411,6 +401,28 @@
       .goal {
         width: 195px;
       }
+
+      .keeper {
+        animation: gloveMoveMobile 1.15s linear infinite alternate;
+      }
+
+      .keeper.defense {
+        animation: defensePulse 0.45s ease-in-out, gloveMoveMobile 1.15s linear infinite alternate;
+      }
+
+      @keyframes gloveMoveMobile {
+        0% {
+          left: calc(50% - 65px);
+          transform: translateX(-50%) rotate(-10deg);
+        }
+        50% {
+          transform: translateX(-50%) rotate(8deg);
+        }
+        100% {
+          left: calc(50% + 65px);
+          transform: translateX(-50%) rotate(10deg);
+        }
+      }
     }
   </style>
 </head>
@@ -418,7 +430,9 @@
 <body>
   <main class="app">
     <div class="badge">Campanha exclusiva</div>
+
     <h1>Chuta<br />e Ganha</h1>
+
     <p class="subtitle">
       Mire no gol, segure para carregar a força e tente marcar. Cuidado: a luva se mexe!
     </p>
@@ -431,10 +445,13 @@
     <section class="field-area" id="fieldArea">
       <div class="goal" id="goal"></div>
       <div class="keeper" id="keeper">🧤</div>
+
       <div class="target-label">Arraste a mira</div>
+
       <div class="target-rail" id="targetRail">
         <div class="target-marker" id="targetMarker"></div>
       </div>
+
       <div class="ball" id="ball">⚽</div>
     </section>
 
@@ -448,7 +465,9 @@
       </div>
     </div>
 
-    <button class="kick-btn" id="kickBtn">Segure para carregar e solte para chutar</button>
+    <button class="kick-btn" id="kickBtn">
+      Segure para carregar e solte para chutar
+    </button>
 
     <div class="hint">
       1. Arraste a mira para escolher a direção.<br>
@@ -456,14 +475,16 @@
       3. Solte no momento certo e fuja da luva.
     </div>
 
-    <div class="status" id="statusMessage">Você tem apenas 1 chance. Faça o gol para liberar seu brinde.</div>
+    <div class="status" id="statusMessage">
+      Você tem apenas 1 chance. Faça o gol para liberar seu brinde.
+    </div>
 
     <section class="result-box" id="resultBox">
       <h2>GOOOOL! 🎉</h2>
       <p>Você ganhou um brinde!</p>
       <p>Mande esse print para seu supervisor para resgatar.</p>
       <div class="rules">
-        Promoção sujeita à confirmação do pedido realizado. O nome do brinde pode ser alterado pela equipe responsável.
+        Promoção sujeita à confirmação do pedido realizado.
       </div>
     </section>
 
@@ -498,11 +519,6 @@
     let powerDirection = 1;
     let chargeInterval = null;
 
-    let keeperPos = 0;
-    let keeperDirection = 1;
-    let keeperPaused = false;
-    let keeperSpeed = 2.4;
-
     function createConfetti() {
       for (let i = 0; i < 55; i++) {
         const confetti = document.createElement("div");
@@ -513,7 +529,10 @@
         confetti.style.width = Math.random() * 8 + 6 + "px";
         confetti.style.height = Math.random() * 8 + 6 + "px";
         document.body.appendChild(confetti);
-        setTimeout(() => confetti.remove(), 3000);
+
+        setTimeout(() => {
+          confetti.remove();
+        }, 3000);
       }
     }
 
@@ -528,27 +547,19 @@
     }
 
     targetRail.addEventListener("pointerdown", (e) => {
-      if (shooting || unlocked) return;
+      if (shooting || unlocked || alreadyKicked) return;
       aiming = true;
       setTargetFromClientX(e.clientX);
     });
 
     window.addEventListener("pointermove", (e) => {
-      if (!aiming || shooting || unlocked) return;
+      if (!aiming || shooting || unlocked || alreadyKicked) return;
       setTargetFromClientX(e.clientX);
     });
 
     window.addEventListener("pointerup", () => {
       aiming = false;
     });
-
-    function moveKeeper() {
-      // A movimentação da luva agora é feita por CSS para funcionar melhor no celular.
-    }
-
-    function initKeeper() {
-      // Mantido apenas para compatibilidade com o restante do código.
-    }
 
     function startCharge(e) {
       if (shooting || unlocked || alreadyKicked) return;
@@ -558,6 +569,7 @@
       power = 0;
       powerDirection = 1;
       updatePowerUI();
+
       statusMessage.textContent = "Carregando força... solte para chutar!";
       kickBtn.classList.remove("disabled");
 
@@ -577,7 +589,7 @@
     }
 
     function endCharge(e) {
-      if (!charging || shooting || unlocked) return;
+      if (!charging || shooting || unlocked || alreadyKicked) return;
       e.preventDefault();
 
       clearInterval(chargeInterval);
@@ -611,14 +623,18 @@
 
     function shootBall() {
       shooting = true;
+      alreadyKicked = true;
+
       kickBtn.classList.add("disabled");
       statusMessage.textContent = "Chutando...";
 
       const fieldRect = fieldArea.getBoundingClientRect();
+
       const startX = fieldRect.width / 2;
       const startY = fieldRect.height - 55;
       const targetX = getTargetXInField();
       const targetY = 145;
+
       const duration = 650;
       const startTime = performance.now();
 
@@ -646,13 +662,12 @@
     }
 
     function finishShot(targetX) {
-      alreadyKicked = true;
       const goalRect = goal.getBoundingClientRect();
       const fieldRect = fieldArea.getBoundingClientRect();
+      const keeperRect = keeper.getBoundingClientRect();
 
       const goalLeft = goalRect.left - fieldRect.left + 10;
       const goalRight = goalRect.right - fieldRect.left - 10;
-      const keeperRect = keeper.getBoundingClientRect();
       const keeperCenter = keeperRect.left - fieldRect.left + keeperRect.width / 2;
 
       const insideGoal = targetX >= goalLeft && targetX <= goalRight;
@@ -677,46 +692,43 @@
 
       if (result === "goal") {
         unlocked = true;
-        keeperPaused = true;
         statusMessage.textContent = "GOOOOL! Você ganhou um brinde 🎉";
         createConfetti();
+
         setTimeout(() => {
           resultBox.style.display = "block";
           resultBox.scrollIntoView({ behavior: "smooth", block: "start" });
         }, 700);
-      } else {
-        if (result === "weak") {
-          statusMessage.textContent = "Chute fraco! Segure mais tempo para carregar.";
-        } else if (result === "miss") {
-          statusMessage.textContent = "Pra fora! Ajuste a mira e tente novamente.";
-        } else if (result === "saved") {
-          keeper.classList.add("defense");
-          statusMessage.textContent = "A luva defendeu! Tente chutar no canto.";
-          setTimeout(() => keeper.classList.remove("defense"), 500);
-        }
 
-        setTimeout(() => {
-          power = 0;
-          updatePowerUI();
-          shooting = false;
-          kickBtn.classList.add("disabled");
-          kickBtn.textContent = "Chance usada. Abra o link novamente.";
-          statusMessage.textContent += " Abra o link novamente para tentar outra vez.";
-        }, 1000);
-
+        kickBtn.classList.add("disabled");
+        kickBtn.textContent = "Brinde desbloqueado!";
         return;
       }
 
-      shooting = false;
-      kickBtn.classList.add("disabled");
+      if (result === "weak") {
+        statusMessage.textContent = "Chute fraco! Chance usada. Abra o link novamente para tentar outra vez.";
+      } else if (result === "miss") {
+        statusMessage.textContent = "Pra fora! Chance usada. Abra o link novamente para tentar outra vez.";
+      } else if (result === "saved") {
+        keeper.classList.add("defense");
+        statusMessage.textContent = "A luva defendeu! Chance usada. Abra o link novamente para tentar outra vez.";
+
+        setTimeout(() => {
+          keeper.classList.remove("defense");
+        }, 500);
+      }
+
+      setTimeout(() => {
+        power = 0;
+        updatePowerUI();
+        shooting = false;
+        kickBtn.classList.add("disabled");
+        kickBtn.textContent = "Chance usada. Abra o link novamente.";
+      }, 1000);
     }
 
     window.addEventListener("load", () => {
       resetBall();
-    });
-
-    window.addEventListener("resize", () => {
-      initKeeper();
     });
   </script>
 </body>
